@@ -1,56 +1,25 @@
-# Kubernetes Guide 
- 
-
-Personal documentation while learning to deploy containers 
-
->Ideally this will be converted over time to the ReadTheDocs documentation container. 
-
-
-### The guide can be seen from here in the directory:
-
-`docs/source`
-
----------------
-
-Clone the readthedocs.org repository:
-
-`git clone --recurse-submodules https://github.com/readthedocs/readthedocs.org/` <br/>
-
----------------
-
-Install the requirements from common submodule:
-
-`pip install -r common/dockerfiles/requirements.txt`
-
----------------
-
-Build the Docker image:
-
-`inv docker.build`
-
----------------
-
-Pull down Docker images for the builders:
-
-`inv docker.pull --only-required`
-
----------------
-
-Start all the containers:
-
-`inv docker.up  --init  # --init is only needed the first time`
-
----------------
-
-Visit http://devthedocs.org
-
-
----------------
----------------
-
 #  Kubernetes guide
 
------------
+
+# Table of Contents
+
+1. [Prerequisites](#prerequisites)
+2. [Getting Started](#getting-started)
+   1. [Deployment](#deployment)
+   2. [Pod examination and configuration](#pod-examination-and-configuration)
+   3. [Commands and Debugging](#commands-and-debugging)
+3. [Creating a custom configuration file](#creating-a-custom-configuration-file)
+4. [Layers of Abstraction](#layers-of-abstraction)
+5. [YAML Configuration File](#yaml-configuration-file)
+6. [Complete Application Setup](#complete-application-setup)
+7. [Namespaces](#namespaces)i
+8. [Create Components in Namespaces](#create-components-in-namespaces)
+9. [K8s Ingress](#k8s-ingress)
+10. [Helm Package Manager](#helm-package-manager)
+11. [Kubernetes Volumes](#kubernetes-volumes)
+12. [Stateful and Stateless applications](#stateful-and-stateless-applications)
+13. [To-Do Sections](#to-do-sections)
+<br />
 
 ### Prerequisites
 
@@ -59,13 +28,14 @@ Visit http://devthedocs.org
 
 **Master & Worker Nodes**
 
-`docker.io`-> Container runtime <br />
-`kubelet` -> Daemon running on systemd. CRUD containers on Pods. <br />
-`kubeadm` -> Performs the necessary actions to get a minimum viable cluster up and running. <br />
+`docker.io`-> Container runtime
+ <br />
+`kubelet` -> Daemon running on systemd. CRUD containers on Pods.
+ <br />
+`kubeadm` -> Performs the necessary actions to get a minimum viable cluster up and running. 
+<br />
 `kubectl` -> CLI againts K8s clusters, e.g. deploy applications, inspect and manage cluster resources, and view logs. 
 <br />
-
-
 
 ### Optional packages
 
@@ -104,7 +74,7 @@ View nodes in the cluster
 
 List your deployments:
 
-`kubectl get deplyments` <br />
+`kubectl get deployments` <br />
 
 
 >Pods that are running inside Kubernetes are running on a private,
@@ -144,7 +114,6 @@ You can access the Pod through the API by running:
 curl http://localhost:8001/api/v1/namespaces/default/pods/$POD_NAME/ 
 ```
 
-------------------------------------------------------------------------
 
 #### Pod examination and configuration
 
@@ -161,9 +130,8 @@ command, which iterrates an interactive terminal.
 kubectl exec -it <pod-name> -- bin/bash
 ```
 
-------------------------------------------------------------------------
 
-#### The Deployment commands are the following:
+#### Commands and Debugging:
 
 ``` console
 kubectl create deployment [name]
@@ -171,7 +139,6 @@ kubectl edit deployment [name]
 kubectl delete deployment [name]
 ```
 
-------------------------------------------------------------------------
 
 #### Status of different K8s components
 
@@ -179,7 +146,6 @@ kubectl delete deployment [name]
 kubectl get nodes|pod|services|replicaset|deployment
 ```
 
-------------------------------------------------------------------------
 
 #### Debugging pods
 
@@ -188,7 +154,6 @@ kubectl logs [pod name]
 kubectl exec -it [pod-name] -- bin/bash
 ```
 
-------------------------------------------------------------------------
 
 ## Creating a custom configuration file
 
@@ -238,7 +203,6 @@ spec:       ##specification for the deployment
         - containerPort: 80
 ```
 
-------------------------------------------------------------------------
 
 ##### User configuration files for CRUD.
 After the config file has been created, it can be applied via the following command:
@@ -260,7 +224,6 @@ Similarly for the deployment:
 kubectl get deployment
 ```
 
--------------------
 
 ### Layers of Abstraction:
 
@@ -268,7 +231,6 @@ kubectl get deployment
 
 ##### Deployment -> ReplicaSet -> Pod -> Container
 
--------------------
 
 ## YAML Configuration File 
 
@@ -280,7 +242,7 @@ kubectl get deployment
 
 <br />
 
-The basic idea is that inside a .yaml configuration file exist other configuration files as `metadata` and `spec` sections.
+The basic idea is that inside a `.yaml` configuration file exist other configuration files as `metadata` and `spec` sections.
 
 `Pods` should have their own configuration inside of the `Deployments` configuration file. 
 All `Pods` will be defined.
@@ -472,7 +434,8 @@ status:
 `kubectl delete -f nginx-deployment.yaml`
 `kubectl delete -f nginx-service.yaml`
 
----------------------------
+
+<br />
 
 ## Complete Application Setup
 
@@ -604,10 +567,12 @@ Check the pod status
 > If it takes a bit for the `pod` to be created, you can run `kubectl get pod --watch` to have live feedback.
 
 
---------
+<br />
 ### Step 2: Create an internal service so that other `pods` can talk to the `mongodb`
 
 See ending section of file `mongo.yaml` in Step 1.
+
+<br />
 
 ### Step 3: Create Mongo Express Extenral Service, along with a ConfigurationMap file, in which we'll add the database URL.
 
@@ -782,7 +747,8 @@ spec:
     - protocol: TCP
       port: 8081
       targetPort: 8081
-      nodePort: 30000/pre>
+      nodePort: 3000>
+
 </pre>
 </td>
 </tr>
@@ -803,13 +769,301 @@ The External-IP address is not yet specified, so we need to assign to an externa
 
 And as a result, a browser will open automatically to the Mongo Express page.
 
+---------------
+
+# Namespaces
+
+Namespaces can be used to organize resources in a cluster.
+
+A cluster can have multiple Namespaces. It helps to think of Namespaces as virtual
+cluster inside a Kubernetes cluster.
+
+Upon cluster creation, K8s gives us 4 default Namespaces.
+
+The following command can be run to view said namespaces:
+
+`kubectl get namespaces`
+
+|Namespaces	           |Function                                                                    	|
+|---       	           |---	                                                                          |
+| defualt              |  Resources you create are located here.                            	        |
+| kube-node-lease      |  Holds info on the heartbeats of nodes. Determines the availability of a node|
+| kube-public          |  Contains the publicly-accesible data.         	                            |
+| kube-system          |  Not to be altered, contains system processes                                |
+| kubernetes-dashboard |  Minikube-Specific                                                           |
+
+To create a new namespace, use the following command or via a config file:
+
+`kubectl create namespace my-namespace` 
+
+### What is the need for namespaces?
+
+Can compartmentalize all components of a cluster for easier user.
+Especially if there are multiple instances of Deployments, Pods, Services and configmaps inside a Cluster.
+
+E.g. There can be different namespaces for Monitoring tools, Database, etc.
+
+Also important if multiple teams use the same Deployment.
+What this offers, is that all teams can use the same deployment, inside the same cluster, 
+but use a different Namespace, as not to disrupt each other.
+
+Another use case is Resource Sharing: Staging and Development.
+That way you can deploy in one cluster, and every namespace has access to the resources of the deployment.
+
+### Create Components in Namespaces
+
+Let's create a `configmap` file inside a specific Namespace.
+
+<table>
+<tr>
+<th>mysql-configmap.yaml</th>
+</tr>
+<tr>
+<td>
+<pre>
+ apiVersion: v1
+ kind: ConfigMap
+ metadata:
+  name: mysql-configmap
+ data:
+  db_url: mysql-service.database
+
+</pre>
+</td>
+</tr>
+</table>
+
+**If no namespace flag is given, the configmap will be created in the default namespace**
+
+`kubectl apply -f mysql-configmap.yam --namespace=my-namespace`
+
+Alternatively, the namespace can be specified inside the config file.
+
+<table>
+<tr>
+<th>mysql-configmap.yaml</th>
+</tr>
+<tr>
+<td>
+<pre>
+ apiVersion: v1
+ kind: ConfigMap
+ metadata:
+  name: mysql-configmap
+  namespace: my-namespace
+ data:
+  db_url: mysql-service.database
+
+</pre>
+</td>
+</tr>
+</table>
+
+To see the configmap inside the custom namespace:
+
+`kubectl get configmap -n my-namespace`
+
+**Also check `kubens` for changing the default namespace**
+
+-------
+# K8s Ingress
+
+Ingress replaces the external service of an application, most likely in production, 
+so that the user can navigate to the service via brower with a `https` `domain name`
+instead of th `IP Address` and the specific `Port` of the application.
+
+## External Service vs Ingress Configuration Files
+
+<table>
+<tr>
+<table>
+<tr>
+<th>external-service.yaml</th>
+<th>ingress.yaml</th>
+</tr>
+<tr>
+<td>
+<pre>
+ apiVersion: v1
+ kind: Service
+ metadata:
+  name: myapp-external-service
+ spec:
+  selector:
+    app: myapp
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 35010
+</pre>
+</td>
+<td>
+
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dashboard-ingress
+  namespace: kubernetes-dashboard
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: dashboard.com
+    http:
+      paths:
+      - path: /
+        pathType: Exact  
+        backend:
+          service:
+            name: kubernetes-dashboard
+            port: 
+              number: 80
+
+```
+
+</td>
+</tr>
+</table>
 
 
-# To-Do Sections:
+After the application of the configuration files have been executed with:
 
-- K8s Namespaces 
-- K8s Ingress
-- Helm Package Manager
-- Persisting Data in Volumes
-- Deploying Stateful Apps with StatefulSet
+`kubectl aply-f dashboard-ingress.yaml`
+
+Run the following command to get the status of the ingress:
+
+`kubectl get ingress -n kubernetes-dashboard`
+
+Now we can see the IP-Address of the dashboard we created along with the domain name.
+
+|NAME|CLASS|HOSTS|ADDRESS|PORTS|AGE|
+|--- |---  |---  |---    |---  |---|
+|dashboard-ingress|<none>|dashboard.com|192.168.49.2|80|23m|
+
+Next, we need to add the IP Address and the domain name to the /etc/hosts file of the machine/cluster.
+
+`sudo -- sh -c "echo '192.168.49.2 dashboard.com' >> /etc/hosts"`
+
+Optional: There may be need for the command `kubectl proxy`to be run in another terminal.
+
+Now we can access the domain `dashboard.com`
+
+Finally, a token needs to be generated via the command :
+
+`kubectl -n kubernetes-dashboard create token admin-user`
+
+And we have been granted access to the dashboard:
+
+![K8s Dashboard running in minikube cluster](dashboard.png)
+
+---
+# Helm Package Manager
+
+Helm Package Manager is a user repository that allows user to user already implemented
+deployment containers that can be added to specific deployments via `.yaml` configuration files.
+
+Package repositories, known as Helm Charts, can be accessed via `CLI` of `Helm Hum`.
+
+`helm search <keyword>`
+
+Helm can also be used as a `Templating Eninge`.
+
+Specifically in cases that there exists multiple microservices of the same nature, but different versions, 
+a common blueprint can be defined and also the dynamic values are replaced by placeholders.
+
+In essense, Helm helps with version control, along with deployment rollout services.
+
+
+---
+# Kubernetes Volumes
+
+This section covers the topic of persisting data in Kubernetes using volums.
+
+There are 3 components of Kubernetes storage:
+
+  1. Persistent Volume
+  2. Persistent Volume Claim
+  3. Storage Class
+
+Storage Requirements:
+
+ - Storage that doesn't depend on the pod lifecycle.
+ - Storage must be available on all nodes.
+ - Storage needs to survive even if cluster crashes.
+
+### Persistent Volume
+
+Persistent Volume is a cluster resource, similar to the CPU or RAM that is used to store data.
+Just like any other K8s component, it is created via `.yaml` configuration file, on which
+the kind of the component is specified, along with the storage capacity and access permission.
+
+Each Cluster can have multiple storage options (local/nfs or cloud) configured for simultaneously usage.
+
+### Persistent Volume Claim
+
+Persistent Volume Claim (pvc) is configured also via a `.yaml` configuration file that specifies
+the storage volume type and capacity it wants to claim, along with other criteria.
+
+**<u>Note </u>:** PVCs must be in the same namespace as the Pod using the claim!
+
+
+### Storage Class
+
+A StorageClass provides a way for administrators to describe the "classes" of storage they offer.
+
+Example `.yaml`
+
+```
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp2
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+mountOptions:
+  - debug
+volumeBindingMode: Immediate
+```
+
+# Stateful and Stateless applications
+
+In Kubernetes, applications can be classified as either stateful or stateless. The classification depends on how an application manages its state, that is,
+the data that it needs to store and retrieve over time.
+
+Stateless applications do not require persistent storage of data, meaning that the application does not need to store any information between requests. 
+They are designed to be easily replicated and scaled horizontally, which means that multiple instances of the application can be running at the same time,
+and requests can be load balanced across them. Stateless applications are often used for web servers, load balancers, or microservices that perform a specific function.
+
+Stateful applications, on the other hand, require persistent storage of data, meaning that the application needs to store and retrieve data over time.
+They are typically more complex to manage than stateless applications because they have data dependencies and require data to be maintained across instances.
+Examples of stateful applications include databases, key-value stores, and file systems.
+
+When deploying stateful applications in Kubernetes, it is important to consider the storage requirements and how data will be managed across instances.
+Kubernetes provides features such as StatefulSets, which allow you to manage stateful applications and ensure that each instance is uniquely identifiable
+and has persistent storage. This makes it easier to scale and manage stateful applications in a Kubernetes environment.
+
+# K8s Services Overview:
+
+Kubernetes (k8s) is a container orchestration platform that allows you to manage, scale, and deploy containerized applications. One of the key features of
+Kubernetes is the ability to define and manage services, which provide network connectivity to groups of pods running your application.
+
+Here is an overview of Kubernetes services:
+
+  - ClusterIP: This is the default service type in Kubernetes. It provides a virtual IP address that can be used to access pods within the same cluster.
+  - ClusterIP services are only accessible from within the cluster.
+  - NodePort: This service type exposes a port on every node in the cluster, and routes traffic to the associated pod. NodePort services are accessible 
+  from outside the cluster by connecting to the node's IP address and the specified port.
+  - LoadBalancer: This service type provisions a load balancer in the cloud provider's infrastructure and directs traffic to the associated pod. LoadBalancer
+  services are accessible from outside the cluster through the load balancer's IP address.
+  - ExternalName: This service type maps a service name to an external DNS name, allowing pods within the cluster to access an external service without exposing
+  the external name to the pod.
+
+Overall, Kubernetes services allow you to easily expose your application to the outside world and manage the network connectivity between your application's components.
+
 
