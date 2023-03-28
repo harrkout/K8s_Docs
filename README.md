@@ -1,30 +1,52 @@
-#  Kubernetes guide
-
+# <p style="text-align: center;">  Kubernetes Guide
 
 # Table of Contents
 
-1. [Prerequisites](#prerequisites)
-2. [Getting Started](#getting-started)
-   1. [Deployment](#deployment)
-   2. [Pod examination and configuration](#pod-examination-and-configuration)
-   3. [Commands and Debugging](#commands-and-debugging)
-3. [Creating a custom configuration file](#creating-a-custom-configuration-file)
-4. [Layers of Abstraction](#layers-of-abstraction)
-5. [YAML Configuration File](#yaml-configuration-file)
-6. [Complete Application Setup](#complete-application-setup)
-7. [Namespaces](#namespaces)i
-8. [Create Components in Namespaces](#create-components-in-namespaces)
-9. [K8s Ingress](#k8s-ingress)
-10. [Helm Package Manager](#helm-package-manager)
-11. [Kubernetes Volumes](#kubernetes-volumes)
-12. [Stateful and Stateless applications](#stateful-and-stateless-applications)
-13. [To-Do Sections](#to-do-sections)
-<br />
+- [  Kubernetes Guide](#--kubernetes-guide)
+- [Table of Contents](#table-of-contents)
+    - [Prerequisites](#prerequisites)
+    - [Optional packages](#optional-packages)
+  - [Getting started](#getting-started)
+  - [Deployment](#deployment)
+      - [Pod examination and configuration](#pod-examination-and-configuration)
+      - [Commands and Debugging](#commands-and-debugging)
+      - [Status of different K8s components](#status-of-different-k8s-components)
+      - [Debugging pods](#debugging-pods)
+  - [Creating a custom configuration file](#creating-a-custom-configuration-file)
+        - [User configuration files for CRUD](#user-configuration-files-for-crud)
+    - [Layers of Abstraction](#layers-of-abstraction)
+        - [Deployment -\> ReplicaSet -\> Pod -\> Container](#deployment---replicaset---pod---container)
+  - [YAML Configuration File](#yaml-configuration-file)
+      - [Ports](#ports)
+  - [Complete Application Setup](#complete-application-setup)
+        - [Step 1](#step-1)
+    - [Step 2: Create an internal service so that other `pods` can talk to the `mongodb`](#step-2-create-an-internal-service-so-that-other-pods-can-talk-to-the-mongodb)
+    - [Step 3: Create Mongo Express Extenral Service, along with a ConfigurationMap file, in which we'll add the database URL](#step-3-create-mongo-express-extenral-service-along-with-a-configurationmap-file-in-which-well-add-the-database-url)
+      - [Apply the ConfigMap](#apply-the-configmap)
+      - [Apply the Mongo-Express](#apply-the-mongo-express)
+  - [Welcome to mongo-express](#welcome-to-mongo-express)
+      - [Let's create an external service for the mongo-express](#lets-create-an-external-service-for-the-mongo-express)
+- [Namespaces](#namespaces)
+    - [What is the need for namespaces?](#what-is-the-need-for-namespaces)
+    - [Create Components in Namespaces](#create-components-in-namespaces)
+- [K8s Ingress](#k8s-ingress)
+  - [External Service vs Ingress Configuration Files](#external-service-vs-ingress-configuration-files)
+- [Helm Package Manager](#helm-package-manager)
+- [Kubernetes Volumes](#kubernetes-volumes)
+    - [Persistent Volume](#persistent-volume)
+    - [Persistent Volume Claim](#persistent-volume-claim)
+    - [Storage Class](#storage-class)
+- [Stateful and Stateless applications](#stateful-and-stateless-applications)
+- [K8s Services Overview](#k8s-services-overview)
+- [Testing Between Master and Worker in Different VMs](#testing-between-master-and-worker-in-different-vms)
+    - [Master](#master)
+    - [Worker](#worker)
+- [Exposure](#exposure)
+- [](#)
 
 ### Prerequisites
 
 <br />
-
 
 **Master & Worker Nodes**
 
@@ -32,9 +54,9 @@
  <br />
 `kubelet` -> Daemon running on systemd. CRUD containers on Pods.
  <br />
-`kubeadm` -> Performs the necessary actions to get a minimum viable cluster up and running. 
+`kubeadm` -> Performs the necessary actions to get a minimum viable cluster up and running.
 <br />
-`kubectl` -> CLI againts K8s clusters, e.g. deploy applications, inspect and manage cluster resources, and view logs. 
+`kubectl` -> CLI againts K8s clusters, e.g. deploy applications, inspect and manage cluster resources, and view logs.
 <br />
 
 ### Optional packages
@@ -44,8 +66,6 @@
 `https transport`
 
 `curl`
-
----
 
 ## Getting started
 
@@ -58,30 +78,27 @@ Creating a cluster with minikube on host machine
 `kubectl version --output=yaml` <br />
 `kubectl cluster-info` <br />
 
-
 View nodes in the cluster
 
-`kubectl get nodes` 
+`kubectl get nodes`
 
 <br />
 
 ## Deployment
 
-`kubectl create deployment <name> --image<image-name-location>` 
+`kubectl create deployment <name> --image<image-name-location>`
 `kubectl create deployment <name> --image<image-name-location>` <br />
 > e.g. => kubectl create deployment kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1
-
 
 List your deployments:
 
 `kubectl get deployments` <br />
 
-
 >Pods that are running inside Kubernetes are running on a private,
 isolated network. By default they are visible from other pods and
 services within the same kubernetes cluster, but not outside that
 network. When we use kubectl, we\'re interacting through an API endpoint
-to communicate with or application. 
+to communicate with or application.
 
 In another terminal, run:
 
@@ -102,7 +119,6 @@ on the pod name, that is also accessible through the proxy. First we
 need to get the Pod name, and we\'ll store in the environment variable
 POD_NAME:
 
-
 ``` console
 export POD_NAME=$(kubectl get pods -o go-template --template
  '{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}')
@@ -113,7 +129,6 @@ You can access the Pod through the API by running:
 ``` console
 curl http://localhost:8001/api/v1/namespaces/default/pods/$POD_NAME/ 
 ```
-
 
 #### Pod examination and configuration
 
@@ -130,8 +145,7 @@ command, which iterrates an interactive terminal.
 kubectl exec -it <pod-name> -- bin/bash
 ```
 
-
-#### Commands and Debugging:
+#### Commands and Debugging
 
 ``` console
 kubectl create deployment [name]
@@ -139,13 +153,11 @@ kubectl edit deployment [name]
 kubectl delete deployment [name]
 ```
 
-
 #### Status of different K8s components
 
 ``` console
 kubectl get nodes|pod|services|replicaset|deployment
 ```
-
 
 #### Debugging pods
 
@@ -154,10 +166,7 @@ kubectl logs [pod name]
 kubectl exec -it [pod-name] -- bin/bash
 ```
 
-
 ## Creating a custom configuration file
-
-
 
 Configuration files in K8s are of .yaml file format. After a Pod,
 Container and Deployment are created, a config file can be
@@ -203,8 +212,8 @@ spec:       ##specification for the deployment
         - containerPort: 80
 ```
 
+##### User configuration files for CRUD
 
-##### User configuration files for CRUD.
 After the config file has been created, it can be applied via the following command:
 
 ``` console
@@ -224,17 +233,15 @@ Similarly for the deployment:
 kubectl get deployment
 ```
 
-
-### Layers of Abstraction:
+### Layers of Abstraction
 
 <br />
 
 ##### Deployment -> ReplicaSet -> Pod -> Container
 
+## YAML Configuration File
 
-## YAML Configuration File 
-
-#### **Strict Syntax Indentation!!**
+**Strict Syntax Indentation!!**
 
 <br />
 
@@ -244,7 +251,7 @@ kubectl get deployment
 
 The basic idea is that inside a `.yaml` configuration file exist other configuration files as `metadata` and `spec` sections.
 
-`Pods` should have their own configuration inside of the `Deployments` configuration file. 
+`Pods` should have their own configuration inside of the `Deployments` configuration file.
 All `Pods` will be defined.
 
 Inside the `metadata` of each `pod`, exist the `spec` section.
@@ -260,8 +267,8 @@ The `Deployment` has its own label, which will be used by the `Service` selector
 
 #### Ports
 
-Both `Service` and `Deployment` need to have `Ports` defined. 
-That way, the DB Service knows with which port to communicate with the nginx Service, and to which `Pod` it 
+Both `Service` and `Deployment` need to have `Ports` defined.
+That way, the DB Service knows with which port to communicate with the nginx Service, and to which `Pod` it
 should forward the request, but also which `Pods` are listening.
 
 **Some examples:**
@@ -349,7 +356,7 @@ We can check if the ports of the `Pods` are correct by running:
 Finally, let's check the status, in .yaml format, that K8s automatically generates, and save it in a file:
 The status info resides in the `etcd`, which stores the the status of the whole cluster, including every component.
 
-`kubectl get deployment nginx-deployment -o yaml > nginx-deployment-result.yaml` 
+`kubectl get deployment nginx-deployment -o yaml > nginx-deployment-result.yaml`
 
 >
 <tr>
@@ -434,7 +441,6 @@ status:
 `kubectl delete -f nginx-deployment.yaml`
 `kubectl delete -f nginx-service.yaml`
 
-
 <br />
 
 ## Complete Application Setup
@@ -442,7 +448,7 @@ status:
 Implementation of simple web application using `mongo-express` & `mongoDB`.
 
 First, we're going to create a `mongoDB` `Pod`, and to talk to the `Pod` we're going to need a service.
-We're going to create an Internal Service, meaning that no external requests are allowed to the pod, 
+We're going to create an Internal Service, meaning that no external requests are allowed to the pod,
 only components in the same cluster are able to talk to it.
 
 Then we'll create a `mongo-express` `Deployment`
@@ -452,22 +458,21 @@ environmental variables, that will allow it to connect to the `mongoDB`.
 
 The `mongoDB` will consist of the following:
 
-  - ConfigMap -> DB URL
-  - Secret    -> DB User, DB Pwd
+- ConfigMap -> DB URL
+- Secret    -> DB User, DB Pwd
 
 So the Request Flow will look like the following:
 
 >The request comes from the browser, it goes through the `mongo-express external Service`, which will forward
-it to the `mongo-express` `Pod`. 
-The `Pod` then will connect to the `mongoDB` Internal Service, which will forward it to the `mongoDB` `Pod`, 
+it to the `mongo-express` `Pod`.
+The `Pod` then will connect to the `mongoDB` Internal Service, which will forward it to the `mongoDB` `Pod`,
 where it will authenticate the request by using the credentials of the `Secret` module of the `mongoDB`.
 
+- Start `minikube` if using a local cluster instance in your host machine.
 
- - Start `minikube` if using a local cluster instance in your host machine.
+- Run `kubectl get all` to view all the components inside the cluster.
 
- - Run `kubectl get all` to view all the components inside the cluster.
-
-##### Step 1:
+##### Step 1
 
   Create the `mongoDB` Deployment.
 
@@ -507,7 +512,7 @@ spec:
               name: mongodb-secret
               key: mongo-root-username
         - name: MONGO_INITDB_ROOT_PASSWORD
-          valueFrom: 
+          valueFrom:
             secretKeyRef:
               name: mongodb-secret
               key: mongo-root-password
@@ -544,9 +549,7 @@ data:
 </tr>
 </table>
 
-
-
-<br /> 
+<br />
 
 Then we can apply the secret with `kubectl`
 
@@ -566,7 +569,6 @@ Check the pod status
 
 > If it takes a bit for the `pod` to be created, you can run `kubectl get pod --watch` to have live feedback.
 
-
 <br />
 ### Step 2: Create an internal service so that other `pods` can talk to the `mongodb`
 
@@ -574,7 +576,7 @@ See ending section of file `mongo.yaml` in Step 1.
 
 <br />
 
-### Step 3: Create Mongo Express Extenral Service, along with a ConfigurationMap file, in which we'll add the database URL.
+### Step 3: Create Mongo Express Extenral Service, along with a ConfigurationMap file, in which we'll add the database URL
 
 <br />
 
@@ -613,7 +615,7 @@ spec:
               name: mongodb-secret
               key: mongo-root-username
         - name: MONGO_INITDB_ROOT_PASSWORD
-          valueFrom: 
+          valueFrom:
             secretKeyRef:
               name: mongodb-secret
               key: mongo-root-password
@@ -635,22 +637,20 @@ spec:
 </tr>
 </table>
 
-<br /> 
+<br />
 
-#### Apply the ConfigMap:
+#### Apply the ConfigMap
 
 `kubectl apply -f mongo-configmap.yaml`
 
-#### Apply the Mongo-Express:
+#### Apply the Mongo-Express
 
 `kubectl apply -f mongo-express.yaml`
 
 We can see the logs for further information and confirmation that everything is going smoothly:
 
-`kubectl logs mongo-express-5bf4b56f47-5n9vq` 
+`kubectl logs mongo-express-5bf4b56f47-5n9vq`
 >change the name of the mongo-express with the name if the instance in your machine.
-
-
 
 <table>
 <tr>
@@ -661,13 +661,11 @@ We can see the logs for further information and confirmation that everything is 
 <td>
 <pre>
 
-
 Welcome to mongo-express
 ------------------------
 
-
 (node:7) [MONGODB DRIVER] Warning: Current Server Discovery and Monitoring engine is deprecated, and will be removed in a future version. To use the new Server Discover and Monitoring engine, pass option { useUnifiedTopology: true } to the MongoClient constructor.
-Mongo Express server listening at http://0.0.0.0:8081
+Mongo Express server listening at <http://0.0.0.0:8081>
 Server is open to allow connections from anyone (0.0.0.0)
 basicAuth credentials are "admin:pass", it is recommended you change this in your config.js!
 
@@ -681,14 +679,9 @@ basicAuth credentials are "admin:pass", it is recommended you change this in you
 Now that everything is running correctly, the last step is to create an external service
 so that we can access the mongo-express from a browser.
 
----
-
-
-#### Let's create an external service for the mongo-express.
+#### Let's create an external service for the mongo-express
 
 <br />
-
-
 
 <table>
 <tr>
@@ -725,12 +718,12 @@ spec:
               name: mongodb-secret
               key: mongo-root-username
         - name: ME_CONFIG_MONGODB_ADMINPASSWORD
-          valueFrom: 
+          valueFrom:
             secretKeyRef:
               name: mongodb-secret
               key: mongo-root-password
         - name: ME_CONFIG_MONGODB_SERVER
-          valueFrom: 
+          valueFrom:
             configMapKeyRef:
               name: mongodb-configmap
               key: database_url
@@ -754,7 +747,7 @@ spec:
 </tr>
 </table>
 
-<br /> 
+<br />
 
 Now, running the command:
 
@@ -769,8 +762,6 @@ The External-IP address is not yet specified, so we need to assign to an externa
 
 And as a result, a browser will open automatically to the Mongo Express page.
 
----------------
-
 # Namespaces
 
 Namespaces can be used to organize resources in a cluster.
@@ -784,17 +775,17 @@ The following command can be run to view said namespaces:
 
 `kubectl get namespaces`
 
-|Namespaces	           |Function                                                                    	|
-|---       	           |---	                                                                          |
-| defualt              |  Resources you create are located here.                            	        |
+|Namespaces            |Function                                                                     |
+|---                   |---                                                                           |
+| defualt              |  Resources you create are located here.                                     |
 | kube-node-lease      |  Holds info on the heartbeats of nodes. Determines the availability of a node|
-| kube-public          |  Contains the publicly-accesible data.         	                            |
+| kube-public          |  Contains the publicly-accesible data.                                      |
 | kube-system          |  Not to be altered, contains system processes                                |
 | kubernetes-dashboard |  Minikube-Specific                                                           |
 
 To create a new namespace, use the following command or via a config file:
 
-`kubectl create namespace my-namespace` 
+`kubectl create namespace my-namespace`
 
 ### What is the need for namespaces?
 
@@ -804,7 +795,7 @@ Especially if there are multiple instances of Deployments, Pods, Services and co
 E.g. There can be different namespaces for Monitoring tools, Database, etc.
 
 Also important if multiple teams use the same Deployment.
-What this offers, is that all teams can use the same deployment, inside the same cluster, 
+What this offers, is that all teams can use the same deployment, inside the same cluster,
 but use a different Namespace, as not to disrupt each other.
 
 Another use case is Resource Sharing: Staging and Development.
@@ -865,10 +856,9 @@ To see the configmap inside the custom namespace:
 
 **Also check `kubens` for changing the default namespace**
 
--------
 # K8s Ingress
 
-Ingress replaces the external service of an application, most likely in production, 
+Ingress replaces the external service of an application, most likely in production,
 so that the user can navigate to the service via brower with a `https` `domain name`
 instead of th `IP Address` and the specific `Port` of the application.
 
@@ -928,7 +918,6 @@ spec:
 </tr>
 </table>
 
-
 After the application of the configuration files have been executed with:
 
 `kubectl aply-f dashboard-ingress.yaml`
@@ -959,7 +948,6 @@ And we have been granted access to the dashboard:
 
 ![K8s Dashboard running in minikube cluster](dashboard.png)
 
----
 # Helm Package Manager
 
 Helm Package Manager is a user repository that allows user to user already implemented
@@ -971,13 +959,11 @@ Package repositories, known as Helm Charts, can be accessed via `CLI` of `Helm H
 
 Helm can also be used as a `Templating Eninge`.
 
-Specifically in cases that there exists multiple microservices of the same nature, but different versions, 
+Specifically in cases that there exists multiple microservices of the same nature, but different versions,
 a common blueprint can be defined and also the dynamic values are replaced by placeholders.
 
 In essense, Helm helps with version control, along with deployment rollout services.
 
-
----
 # Kubernetes Volumes
 
 This section covers the topic of persisting data in Kubernetes using volums.
@@ -990,9 +976,9 @@ There are 3 components of Kubernetes storage:
 
 Storage Requirements:
 
- - Storage that doesn't depend on the pod lifecycle.
- - Storage must be available on all nodes.
- - Storage needs to survive even if cluster crashes.
+- Storage that doesn't depend on the pod lifecycle.
+- Storage must be available on all nodes.
+- Storage needs to survive even if cluster crashes.
 
 ### Persistent Volume
 
@@ -1008,7 +994,6 @@ Persistent Volume Claim (pvc) is configured also via a `.yaml` configuration fil
 the storage volume type and capacity it wants to claim, along with other criteria.
 
 **<u>Note </u>:** PVCs must be in the same namespace as the Pod using the claim!
-
 
 ### Storage Class
 
@@ -1036,7 +1021,7 @@ volumeBindingMode: Immediate
 In Kubernetes, applications can be classified as either stateful or stateless. The classification depends on how an application manages its state, that is,
 the data that it needs to store and retrieve over time.
 
-Stateless applications do not require persistent storage of data, meaning that the application does not need to store any information between requests. 
+Stateless applications do not require persistent storage of data, meaning that the application does not need to store any information between requests.
 They are designed to be easily replicated and scaled horizontally, which means that multiple instances of the application can be running at the same time,
 and requests can be load balanced across them. Stateless applications are often used for web servers, load balancers, or microservices that perform a specific function.
 
@@ -1048,22 +1033,122 @@ When deploying stateful applications in Kubernetes, it is important to consider 
 Kubernetes provides features such as StatefulSets, which allow you to manage stateful applications and ensure that each instance is uniquely identifiable
 and has persistent storage. This makes it easier to scale and manage stateful applications in a Kubernetes environment.
 
-# K8s Services Overview:
+# K8s Services Overview
 
 Kubernetes (k8s) is a container orchestration platform that allows you to manage, scale, and deploy containerized applications. One of the key features of
 Kubernetes is the ability to define and manage services, which provide network connectivity to groups of pods running your application.
 
 Here is an overview of Kubernetes services:
 
-  - ClusterIP: This is the default service type in Kubernetes. It provides a virtual IP address that can be used to access pods within the same cluster.
-  - ClusterIP services are only accessible from within the cluster.
-  - NodePort: This service type exposes a port on every node in the cluster, and routes traffic to the associated pod. NodePort services are accessible 
+- ClusterIP: This is the default service type in Kubernetes. It provides a virtual IP address that can be used to access pods within the same cluster.
+- ClusterIP services are only accessible from within the cluster.
+- NodePort: This service type exposes a port on every node in the cluster, and routes traffic to the associated pod. NodePort services are accessible
   from outside the cluster by connecting to the node's IP address and the specified port.
-  - LoadBalancer: This service type provisions a load balancer in the cloud provider's infrastructure and directs traffic to the associated pod. LoadBalancer
+- LoadBalancer: This service type provisions a load balancer in the cloud provider's infrastructure and directs traffic to the associated pod. LoadBalancer
   services are accessible from outside the cluster through the load balancer's IP address.
-  - ExternalName: This service type maps a service name to an external DNS name, allowing pods within the cluster to access an external service without exposing
+- ExternalName: This service type maps a service name to an external DNS name, allowing pods within the cluster to access an external service without exposing
   the external name to the pod.
 
 Overall, Kubernetes services allow you to easily expose your application to the outside world and manage the network connectivity between your application's components.
 
+---
+# Testing Between Master and Worker in Different VMs
 
+- [x] Communication between Master-Node
+- [x] Document commands
+- [ ] Experiment with deployments
+- [ ] Examine image deployment in pods
+
+
+> Note that both Master and Worker are running on different VMs inside the same host machine. 
+
+> We suppose that the prerequisite packages are already installed as per the K8s documentation:
+>
+> - kubectl
+> - kubeadmin
+> - kubelet
+> - docker, or other CRI
+>
+> Also make sure that all the above packages' service are up and running.
+
+### Master 
+
+- Run the `ip addr` command and make a note of the Master node's IP adress.
+  - ```
+    enp1s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP  group default qlen 1000
+    link/ether 52:54:00:8a:38:61 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.122.222/24 brd 192.168.122.255 scope global dynamic noprefixroute enp1s0
+      valid_lft 2978sec preferred_lft 2978sec
+    inet6 fe80::5fbf:1833:73da:d07c/64 scope link noprefixroute 
+      valid_lft forever preferred_lft forever
+- Login as `root` on the shell promt: `sudo su -`
+- Initialize the cluster on the Master node:
+  - `kubeadm init --pod-network-cidr=10.10.0.0/16 --apiserver-advertise-address=192.168.122.222`
+- The above command brings the following message to the promt:
+  - ```Your Kubernetes control-plane has initialized successfully!
+
+    To start using your cluster, you need to run the following as a regular user:
+
+      mkdir -p $HOME/.kube
+      sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+      sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+    Alternatively, if you are the root user, you can run:
+
+      export KUBECONFIG=/etc/kubernetes/admin.conf
+
+    You should now deploy a pod network to the cluster.
+    Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
+      https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+    Then you can join any number of worker nodes by running the following on each as root:
+
+    kubeadm join 192.168.122.222:6443 --token maydxf.wdebk75ipe0e3j5q \
+      --discovery-token-ca-cert-hash sha256:1a7ce87c65adf9ea047bb8d093b98e72f8aefc17d632e6003dbe3be6d728dd4d 
+-  Then, as a regular user we run the following as shown in the above message:
+     -  ```
+          mkdir -p $HOME/.kube
+          sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+          sudo chown $(id -u):$(id -g) $HOME/.kube/config
+- And then we need to deploy o pod network to the cluster. In this case, the K8s addon used is called `Calico`
+  -  ```
+     kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3. 25.0/manifests/tigera-operator.yaml
+  - ```
+    curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/custom-resources.yaml -O
+  - ```
+    kubectl create -f custom-resources.yaml
+  - ```
+    curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml -O
+  ---
+  ### Worker
+
+- Now, we need to order the worker node to join the Master node's network:
+
+  > In the message shown after the cluster initialization we can see an auto-generated command that K8s gives us to connect any pod to the cluster network.
+
+  -  ```
+      curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml -O
+- **Finally the following message is being shown on the worker prompt:**
+  - ```
+    This node has joined the cluster:
+    * Certificate signing request was sent to apiserver and a response was received.
+    * The Kubelet was informed of the new secure connection details.
+
+    Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
+
+- And we can see the Worker node has been connected to the cluster network from the Master's promt.
+
+```
+    master@master:~/Desktop$ kubectl get node
+     
+    NAME         STATUS   ROLES           AGE     VERSION
+    master       Ready    control-plane   10m     v1.26.3
+    slave-node   Ready    <none>          9m21s   v1.26.3
+```
+
+
+# Exposure
+
+Note to self:  Read the following <https://kubernetes.io/docs/tutorials/stateless-application/expose-external-ip-address/>
+
+#
