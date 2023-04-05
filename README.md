@@ -40,9 +40,10 @@
 - [K8s Services Overview](#k8s-services-overview)
 - [Testing Between Master and Worker in Different VMs](#testing-between-master-and-worker-in-different-vms)
     - [Master](#master)
+  - [](#)
     - [Worker](#worker)
 - [Exposure](#exposure)
-- [](#)
+- [](#-1)
 
 ### Prerequisites
 
@@ -1084,6 +1085,16 @@ Overall, Kubernetes services allow you to easily expose your application to the 
 - Login as `root` on the shell promt: `sudo su -`
 - Initialize the cluster on the Master node:
   - `kubeadm init --pod-network-cidr=10.10.0.0/16 --apiserver-advertise-address=192.168.122.222`
+</br>
+---
+- **Alternativley**, in case of a similar error:
+  `couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s`,
+   check that the KUBECONFIG environmental variable leads to `~/.kube/config` and not `~/admin.conf`, via the command `echo $KUBECONFIG`
+  - In case you need to change it te env variable, run the following command:
+    - `export KUBECONFIG=~/.kube/config && echo $KUBECONFIG`
+    - Check that everything is running smoothly:
+      - `kubectl get pods`
+---
 - The above command brings the following message to the promt:
   - ```Your Kubernetes control-plane has initialized successfully!
 
@@ -1112,13 +1123,15 @@ Overall, Kubernetes services allow you to easily expose your application to the 
           sudo chown $(id -u):$(id -g) $HOME/.kube/config
 - And then we need to deploy o pod network to the cluster. In this case, the K8s addon used is called `Calico`
   -  ```
-     kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3. 25.0/manifests/tigera-operator.yaml
+     kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/tigera-operator.yaml
   - ```
     curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/custom-resources.yaml -O
   - ```
     kubectl create -f custom-resources.yaml
   - ```
     curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml -O
+  - ```
+    kubectl apply -f calico.yaml
   ---
   ### Worker
 
@@ -1127,7 +1140,9 @@ Overall, Kubernetes services allow you to easily expose your application to the 
   > In the message shown after the cluster initialization we can see an auto-generated command that K8s gives us to connect any pod to the cluster network.
 
   -  ```
-      curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml -O
+      kubeadm join 192.168.122.222:6443 --token uld3oe.goqqlexe51z135og \
+	    --discovery-token-ca-cert-hash sha256:c889f1c891f541d55d75b8e04c79bd67cda18557e2fe4f6accfb10675e3ef45b 
+      
 - **Finally the following message is being shown on the worker prompt:**
   - ```
     This node has joined the cluster:
@@ -1141,10 +1156,15 @@ Overall, Kubernetes services allow you to easily expose your application to the 
 ```
     master@master:~/Desktop$ kubectl get node
      
-    NAME         STATUS   ROLES           AGE     VERSION
-    master       Ready    control-plane   10m     v1.26.3
-    slave-node   Ready    <none>          9m21s   v1.26.3
+    NAME                       STATUS   ROLES           AGE     VERSION
+    worker-yoga (master)       Ready    control-plane   10m     v1.26.3
+    rth (worker)               Ready    <none>          9m21s   v1.26.3
 ```
+- Cluster overview with the `k9s` package:
+
+![K8s Dashboard running in minikube cluster](k9s_1.png)
+
+![K8s Dashboard running in minikube cluster](k9s_2.png)
 
 
 # Exposure
