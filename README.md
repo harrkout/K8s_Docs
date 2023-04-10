@@ -5,21 +5,20 @@
 - [  Kubernetes Guide](#--kubernetes-guide)
 - [Table of Contents](#table-of-contents)
     - [Prerequisites](#prerequisites)
-    - [Optional packages](#optional-packages)
+      - [Optional packages](#optional-packages)
   - [Getting started](#getting-started)
-  - [Deployment](#deployment)
+      - [Layers of Abstraction](#layers-of-abstraction)
+  - [Deployment Example](#deployment-example)
       - [Pod examination and configuration](#pod-examination-and-configuration)
       - [Commands and Debugging](#commands-and-debugging)
       - [Status of different K8s components](#status-of-different-k8s-components)
       - [Debugging pods](#debugging-pods)
   - [Creating a custom configuration file](#creating-a-custom-configuration-file)
-        - [User configuration files for CRUD](#user-configuration-files-for-crud)
-    - [Layers of Abstraction](#layers-of-abstraction)
-        - [Deployment -\> ReplicaSet -\> Pod -\> Container](#deployment---replicaset---pod---container)
+    - [User configuration files for CRUD](#user-configuration-files-for-crud)
   - [YAML Configuration File](#yaml-configuration-file)
       - [Ports](#ports)
   - [Complete Application Setup](#complete-application-setup)
-        - [Step 1](#step-1)
+      - [Step 1](#step-1)
     - [Step 2: Create an internal service so that other `pods` can talk to the `mongodb`](#step-2-create-an-internal-service-so-that-other-pods-can-talk-to-the-mongodb)
     - [Step 3: Create Mongo Express Extenral Service, along with a ConfigurationMap file, in which we'll add the database URL](#step-3-create-mongo-express-extenral-service-along-with-a-configurationmap-file-in-which-well-add-the-database-url)
       - [Apply the ConfigMap](#apply-the-configmap)
@@ -40,27 +39,28 @@
 - [K8s Services Overview](#k8s-services-overview)
 - [Testing Between Master and Worker in Different VMs](#testing-between-master-and-worker-in-different-vms)
     - [Master](#master)
-  - [](#)
     - [Worker](#worker)
 - [Exposure](#exposure)
-- [](#-1)
+- [](#)
 
+
+<br/>
 ### Prerequisites
 
 <br />
 
 **Master & Worker Nodes**
 
-`docker.io`-> Container runtime
- <br />
+`docker.io`, or other CRIs -> Container runtime interface
+ 
 `kubelet` -> Daemon running on systemd. CRUD containers on Pods.
- <br />
+
 `kubeadm` -> Performs the necessary actions to get a minimum viable cluster up and running.
-<br />
+
 `kubectl` -> CLI againts K8s clusters, e.g. deploy applications, inspect and manage cluster resources, and view logs.
 <br />
 
-### Optional packages
+#### Optional packages
 
 <br />
 
@@ -70,7 +70,14 @@
 
 ## Getting started
 
-Creating a cluster with minikube on host machine
+#### Layers of Abstraction
+
+
+`Deployment -> ReplicaSet -> Pod -> Container`
+
+
+
+Creating a cluster with minikube on host machine for experimentation on one-host machin setup.
 
 > Install minikube to set a local K8s cluster. Not OS-specific.
 
@@ -85,7 +92,7 @@ View nodes in the cluster
 
 <br />
 
-## Deployment
+## Deployment Example
 
 `kubectl create deployment <name> --image<image-name-location>`
 `kubectl create deployment <name> --image<image-name-location>` <br />
@@ -130,7 +137,7 @@ You can access the Pod through the API by running:
 ``` console
 curl http://localhost:8001/api/v1/namespaces/default/pods/$POD_NAME/ 
 ```
-
+---
 #### Pod examination and configuration
 
 Pod status can be seen via the describe command of kubectl.
@@ -166,10 +173,10 @@ kubectl get nodes|pod|services|replicaset|deployment
 kubectl logs [pod name]
 kubectl exec -it [pod-name] -- bin/bash
 ```
-
+---
 ## Creating a custom configuration file
 
-Configuration files in K8s are of .yaml file format. After a Pod,
+Configuration files in K8s are of `.yaml` file format. After a Pod,
 Container and Deployment are created, a config file can be
 created/edited.
 
@@ -180,12 +187,9 @@ touch nginx-deployment.yaml
 nvim nginx-deployment.yaml
 ```
 
->Nginx is a local web server that provides load balancing, allong with HTTP cache and reverse proxy.
-<br />
-
->From the .yaml configuration file that will be created below, the nginx local server will be deployed inside a containerized environment.
-
-Inside the .yaml file, a strict and specific syntax must be followed.
+>- Nginx is a local web server that provides load balancing, allong with HTTP cache and reverse proxy.
+>- From the `.yaml` configuration file that will be created below, the nginx local server will be deployed inside a containerized environment.
+>- Inside the .yaml file, a strict and specific syntax must be followed.
 
 **Indentation must be strictly followed, otherwise it leads to errors.**
 
@@ -213,7 +217,8 @@ spec:       ##specification for the deployment
         - containerPort: 80
 ```
 
-##### User configuration files for CRUD
+<br/>
+### User configuration files for CRUD
 
 After the config file has been created, it can be applied via the following command:
 
@@ -234,19 +239,14 @@ Similarly for the deployment:
 kubectl get deployment
 ```
 
-### Layers of Abstraction
-
-<br />
-
-##### Deployment -> ReplicaSet -> Pod -> Container
-
+<br/>
 ## YAML Configuration File
 
 **Strict Syntax Indentation!!**
 
 <br />
 
->For autogenerating config files, K8s gets the status from the etch, which hold the current status of any K8s component!
+>For autogenerating config files, K8s gets the status from the **`etcd`**, which holds the current status of any K8s component!
 
 <br />
 
@@ -354,7 +354,7 @@ We can check if the ports of the `Pods` are correct by running:
 
 -----------------
 
-Finally, let's check the status, in .yaml format, that K8s automatically generates, and save it in a file:
+Finally, let's check the status, in `.yaml` format, that K8s automatically generates, and save it in a file.
 The status info resides in the `etcd`, which stores the the status of the whole cluster, including every component.
 
 `kubectl get deployment nginx-deployment -o yaml > nginx-deployment-result.yaml`
@@ -473,7 +473,9 @@ where it will authenticate the request by using the credentials of the `Secret` 
 
 - Run `kubectl get all` to view all the components inside the cluster.
 
-##### Step 1
+<br/>
+
+  #### Step 1
 
   Create the `mongoDB` Deployment.
 
@@ -568,7 +570,10 @@ Check the pod status
 
 `kubectl get pod`
 
-> If it takes a bit for the `pod` to be created, you can run `kubectl get pod --watch` to have live feedback.
+If it takes a bit for the **`pod`** to be created, you can run:
+ 
+**`kubectl get pod --watch`** to have live feedback for a few seconds, or 
+**`watch kubectl get pod`**, to enable the non-stop ***watch*** functionality on Linux.
 
 <br />
 ### Step 2: Create an internal service so that other `pods` can talk to the `mongodb`
@@ -651,7 +656,7 @@ spec:
 We can see the logs for further information and confirmation that everything is going smoothly:
 
 `kubectl logs mongo-express-5bf4b56f47-5n9vq`
->change the name of the mongo-express with the name if the instance in your machine.
+>change the name **mongo-express-5bf4b56f47-5n9vq** with the name of the instance in your machine.
 
 <table>
 <tr>
@@ -665,7 +670,8 @@ We can see the logs for further information and confirmation that everything is 
 Welcome to mongo-express
 ------------------------
 
-(node:7) [MONGODB DRIVER] Warning: Current Server Discovery and Monitoring engine is deprecated, and will be removed in a future version. To use the new Server Discover and Monitoring engine, pass option { useUnifiedTopology: true } to the MongoClient constructor.
+(node:7) [MONGODB DRIVER] Warning: Current Server Discovery and Monitoring engine is deprecated, and will be removed 
+in a future version. To use the new Server Discover and Monitoring engine, pass option { useUnifiedTopology: true } to the MongoClient constructor.
 Mongo Express server listening at <http://0.0.0.0:8081>
 Server is open to allow connections from anyone (0.0.0.0)
 basicAuth credentials are "admin:pass", it is recommended you change this in your config.js!
@@ -680,6 +686,7 @@ basicAuth credentials are "admin:pass", it is recommended you change this in you
 Now that everything is running correctly, the last step is to create an external service
 so that we can access the mongo-express from a browser.
 
+---
 #### Let's create an external service for the mongo-express
 
 <br />
@@ -857,6 +864,7 @@ To see the configmap inside the custom namespace:
 
 **Also check `kubens` for changing the default namespace**
 
+---
 # K8s Ingress
 
 Ingress replaces the external service of an application, most likely in production,
@@ -871,6 +879,7 @@ instead of th `IP Address` and the specific `Port` of the application.
 <tr>
 <th>external-service.yaml</th>
 <th>ingress.yaml</th>
+<th>dashboard-ingress.yaml</th>
 </tr>
 <tr>
 <td>
@@ -914,6 +923,55 @@ spec:
               number: 80
 
 ```
+</td>
+<td>
+
+```apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/auth-url: "https://$host/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$escaped_request_uri"
+  name: external-auth-oauth2
+  namespace: kube-system
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: __INGRESS_HOST__
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kubernetes-dashboard
+            port:
+              number: 80
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: oauth2-proxy
+  namespace: kube-system
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: __INGRESS_HOST__
+    http:
+      paths:
+      - path: /oauth2
+        pathType: Prefix
+        backend:
+          service:
+            name: oauth2-proxy
+            port:
+              number: 4180
+  tls:
+  - hosts:
+    - __INGRESS_HOST__
+    secretName: __INGRESS_SECRET__
+
+```
 
 </td>
 </tr>
@@ -921,7 +979,7 @@ spec:
 
 After the application of the configuration files have been executed with:
 
-`kubectl aply-f dashboard-ingress.yaml`
+`kubectl apply -f dashboard-ingress.yaml`
 
 Run the following command to get the status of the ingress:
 
@@ -1002,20 +1060,20 @@ A StorageClass provides a way for administrators to describe the "classes" of st
 
 Example `.yaml`
 
-```
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: standard
-provisioner: kubernetes.io/aws-ebs
-parameters:
-  type: gp2
-reclaimPolicy: Retain
-allowVolumeExpansion: true
-mountOptions:
-  - debug
-volumeBindingMode: Immediate
-```
+
+    apiVersion: storage.k8s.io/v1
+    kind: StorageClass
+    metadata:
+      name: standard
+    provisioner: kubernetes.io/aws-ebs
+    parameters:
+      type: gp2
+    reclaimPolicy: Retain
+    allowVolumeExpansion: true
+    mountOptions:
+      - debug
+    volumeBindingMode: Immediate
+
 
 # Stateful and Stateless applications
 
@@ -1057,7 +1115,7 @@ Overall, Kubernetes services allow you to easily expose your application to the 
 
 - [x] Communication between Master-Node
 - [x] Document commands
-- [ ] Experiment with deployments
+- [x] Experiment with deployments
 - [ ] Examine image deployment in pods
 
 
@@ -1074,6 +1132,8 @@ Overall, Kubernetes services allow you to easily expose your application to the 
 
 ### Master 
 
+**The following commands refer to cases where we need to specify a custom IP for the cluster.**
+
 - Run the `ip addr` command and make a note of the Master node's IP adress.
   - ```
     enp1s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP  group default qlen 1000
@@ -1085,9 +1145,14 @@ Overall, Kubernetes services allow you to easily expose your application to the 
 - Login as `root` on the shell promt: `sudo su -`
 - Initialize the cluster on the Master node:
   - `kubeadm init --pod-network-cidr=10.10.0.0/16 --apiserver-advertise-address=192.168.122.222`
-</br>
+
+
+
+**Otherwise, the command `kubeadm init` will generate the same cluster but for a generic IP address.**
+
+
 ---
-- **Alternativley**, in case of a similar error:
+- **Alternatively**, in case of an error like this:
   `couldn't get current server API group list: Get "http://localhost:8080/api?timeout=32s`,
    check that the KUBECONFIG environmental variable leads to `~/.kube/config` and not `~/admin.conf`, via the command `echo $KUBECONFIG`
   - In case you need to change it te env variable, run the following command:
@@ -1164,10 +1229,25 @@ Overall, Kubernetes services allow you to easily expose your application to the 
 
 ![K8s Dashboard running in minikube cluster](k9s_1.png)
 
+- In the above figure, we can see:
+  - the namespaces created inside the cluster,
+  - the names of the deployments of each namespace,
+  - the availability of each deployment ('Ready' column),
+  - the IP address of each deployment inside the cluster network and
+  - the node each deployment is attached to.
+
 ![K8s Dashboard running in minikube cluster](k9s_2.png)
 
+- In the above figure we can see the description of the namespace selected (nginx).
+
+![K8s Dashboard running in minikube cluster](nginx_shell.png)
+
+- Inside the shell promt of the nginx containerized image.
+---
 
 # Exposure
+
+>describe ingress better and document the exposure of a pod in an external domain
 
 Note to self:  Read the following <https://kubernetes.io/docs/tutorials/stateless-application/expose-external-ip-address/>
 
